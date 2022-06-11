@@ -1,12 +1,18 @@
 package com.aydemir.mappyplaces.service;
 
+import com.aydemir.mappyplaces.model.Place;
+import com.aydemir.mappyplaces.model.SearchResult;
+import com.aydemir.mappyplaces.util.JsonDeserializer;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 import okhttp3.*;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.*;
-import java.util.Scanner;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Service
 public class MapService {
@@ -17,10 +23,19 @@ public class MapService {
 
     private static final String OUT_JSON = "/json";
     // KEY!
-    private static final String API_KEY = "this is not my real key dont even bother";
+    private static final String API_KEY = "fake";
+    Firestore firestore;
+    public List<Place> getPlaces(double latitude, double longitude, Long radius) throws IOException, ExecutionException, InterruptedException {
 
-    //todo fix this
-    public String getPlaces(double latitude, double longitude, Long radius) throws IOException {
+        firestore = FirestoreClient.getFirestore();
+        String searchId = latitude+","+longitude+","+radius;
+
+        ApiFuture<DocumentSnapshot> documentSnapshotApiFuture = firestore.collection("searches").document(searchId).get();
+        SearchResult searchResult = documentSnapshotApiFuture.get().toObject(SearchResult.class);
+
+        if (searchResult != null) {
+            return searchResult.getPlaces();
+        }
 
         StringBuilder sb = new StringBuilder(PLACES_API_BASE);
         sb.append(TYPE_SEARCH);
@@ -43,7 +58,14 @@ public class MapService {
                 .build();
 
         Response response = client.newCall(request).execute();
-        System.out.println(sb.toString());
-        return response.body().string();
+        String res = response.body().string();
+        //System.out.println(res);
+        List places = JsonDeserializer.getPlacesFromJson(res);
+
+        SearchResult search = new SearchResult(places);
+
+        firestore.collection("searches").document(searchId).set(search);
+
+        return places;
     }
 }
