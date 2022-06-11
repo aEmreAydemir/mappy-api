@@ -2,6 +2,7 @@ package com.aydemir.mappyplaces.service;
 
 import com.aydemir.mappyplaces.model.Place;
 import com.aydemir.mappyplaces.model.SearchResult;
+import com.aydemir.mappyplaces.util.Constants;
 import com.aydemir.mappyplaces.util.JsonDeserializer;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -16,42 +17,32 @@ import java.util.concurrent.ExecutionException;
 
 @Service
 public class MapService {
-    private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place";
-    private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
-    private static final String TYPE_DETAILS = "/details";
-    private static final String TYPE_SEARCH = "/nearbysearch";
 
-    private static final String OUT_JSON = "/json";
-    // KEY!
-    private static final String API_KEY = "fake";
-    Firestore firestore;
+    Firestore firestore = FirestoreClient.getFirestore();
+    ApiFuture<DocumentSnapshot> documentSnapshotApiFuture;
+
     public List<Place> getPlaces(double latitude, double longitude, Long radius) throws IOException, ExecutionException, InterruptedException {
 
-        firestore = FirestoreClient.getFirestore();
         String searchId = latitude+","+longitude+","+radius;
 
-        ApiFuture<DocumentSnapshot> documentSnapshotApiFuture = firestore.collection("searches").document(searchId).get();
+        documentSnapshotApiFuture = firestore.collection(Constants.FireStoreDocument.SEARCH_DOC).document(searchId).get();
         SearchResult searchResult = documentSnapshotApiFuture.get().toObject(SearchResult.class);
 
         if (searchResult != null) {
             return searchResult.getPlaces();
         }
 
-        StringBuilder sb = new StringBuilder(PLACES_API_BASE);
-        sb.append(TYPE_SEARCH);
-        sb.append(OUT_JSON);
+        StringBuilder sb = new StringBuilder(Constants.GoogleApiRequest.PLACES_API_BASE);
+        sb.append(Constants.GoogleApiRequest.NEARBY_SEARCH);
+        sb.append(Constants.GoogleApiRequest.OUT_JSON);
 
-
-        //sb.append("&keyword=" + URLEncoder.encode(keyword, "utf8"));
-        sb.append("?location=" + String.valueOf(longitude) + "," + String.valueOf(latitude));
-        sb.append("&radius=" + String.valueOf(radius));
+        sb.append("?location=" + longitude + "," + latitude);
+        sb.append("&radius=" + radius);
         //sb.append("&type=restaurant");
-        sb.append("&key=" + API_KEY);
+        sb.append("&key=" + Constants.GoogleApiRequest.API_KEY);
 
         OkHttpClient client = new OkHttpClient().newBuilder().build();
 
-        //MediaType mediaType = MediaType.parse("text/plain");
-        //RequestBody body = RequestBody.create(mediaType,"");
         Request request = new Request.Builder()
                 .url(sb.toString())
                 .get()
@@ -59,12 +50,12 @@ public class MapService {
 
         Response response = client.newCall(request).execute();
         String res = response.body().string();
-        //System.out.println(res);
+
         List places = JsonDeserializer.getPlacesFromJson(res);
 
         SearchResult search = new SearchResult(places);
 
-        firestore.collection("searches").document(searchId).set(search);
+        firestore.collection(Constants.FireStoreDocument.SEARCH_DOC).document(searchId).set(search);
 
         return places;
     }
