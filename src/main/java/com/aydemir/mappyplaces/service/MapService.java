@@ -7,6 +7,7 @@ import com.aydemir.mappyplaces.model.SearchResult;
 import com.aydemir.mappyplaces.util.Constants;
 import com.aydemir.mappyplaces.util.JsonDeserializer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,8 @@ public class MapService {
         }
 
         String location = longitude + "," + latitude;
-        ResponseEntity<String> response = googleApiClient.getNearbyPlacesFromGoogle(location, radius, Constants.GoogleApiRequest.API_KEY);
+
+        ResponseEntity<String> response = googleApiClient.getNearbyPlacesFromGoogle(location, radius,getGoogleMapsKey());
         List<Place> places = JsonDeserializer.getPlacesFromJson(response.getBody());
         searchResult = new SearchResult(places);
         firestoreService.saveSearchResult(searchId, searchResult);
