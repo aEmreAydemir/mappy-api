@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-@CrossOrigin(origins = "http://localhost:4200/", maxAge = 3600)
+@CrossOrigin(origins = "https://mappy-places-web-njm47btaua-ew.a.run.app/", maxAge = 3600)
 @RestController
 @RequestMapping("api/map")
 public class MapController {
@@ -24,5 +24,10 @@ public class MapController {
     @GetMapping("/places")
     public List<Place> getPlaces(@RequestParam double longitude, @RequestParam double latitude, @RequestParam Long radius) throws IOException, ExecutionException, InterruptedException {
         return  mapService.getPlaces(longitude,latitude,radius);
+    }
+
+    @GetMapping("/key")
+    public String getGoogleMapsKey() {
+        return mapService.getGoogleMapsKey();
     }
 }

@@ -2,25 +2,19 @@ package com.aydemir.mappyplaces.configuration;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
-import org.springframework.stereotype.Service;
-
 import com.google.firebase.FirebaseOptions;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-
-import javax.annotation.PostConstruct;
-import java.io.FileInputStream;
 import java.io.IOException;
 
-@Service
+@Configuration
 public class FirebaseConfiguration {
-    @PostConstruct
+
+    @Bean
     public void initialize() throws IOException {
-        FileInputStream serviceAccount = new FileInputStream("./serviceAccount.json");
-
-        FirebaseOptions options = new FirebaseOptions.Builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                .build();
-
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.getApplicationDefault()).build();
         FirebaseApp.initializeApp(options);
     }
 }
